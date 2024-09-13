@@ -1,5 +1,6 @@
 # tmp file for builds
 src/cyaccess.cpp
+cmake-build*/
 
 .idea/
 .ipynb_checkpoints/
