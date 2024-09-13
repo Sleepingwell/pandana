@@ -83,6 +83,7 @@ cyaccess = Extension(
         'src/graphalg.cpp',
         'src/cyaccess.pyx',
         'src/contraction_hierarchies/src/libch.cpp',
+        'src/route_state.cpp',
         'src/transit_extensions.cpp'],
     language='c++',
     include_dirs=['.', np.get_include()],

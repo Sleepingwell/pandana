@@ -13,6 +13,23 @@ cimport numpy as np
 # http://cython.readthedocs.io/en/latest/src/userguide/wrapping_CPlusPlus.html
 # http://www.birving.com/blog/2014/05/13/passing-numpy-arrays-between-python-and/
 
+cdef extern from "route_state.h" namespace "MTC::accessibility":
+    cdef cppclass RoutingStatsState:
+        RoutingStatsState(int) except +
+        void serialise(const char*, int, int) except +
+
+cdef class PyRoutingStatsState:
+    cdef RoutingStatsState * routingStatsState
+
+    def __cinit__(self, int max_link_id):
+        self.routingStatsState = new RoutingStatsState(max_link_id)
+
+    def __dealloc__(self):
+        del self.routingStatsState
+
+    def serialise(self, filename, n_files, job_id):
+        self.routingStatsState.serialise(str(filename).encode(), n_files, job_id)
+
 
 cdef extern from "accessibility.h" namespace "MTC::accessibility":
     cdef cppclass Accessibility:
@@ -28,6 +45,7 @@ cdef extern from "accessibility.h" namespace "MTC::accessibility":
         vector[int] Route(int, int, int)
         vector[vector[int]] Routes(vector[long], vector[long], int)
         vector[int] RoutesToFile(vector[long], vector[long], int, vector[int], const char*)
+        void RoutesStats(vector[long], vector[long], int, vector[double], const char*, RoutingStatsState*)
         double Distance(int, int, int)
         vector[double] Distances(vector[long], vector[long], int)
         vector[vector[pair[long, float]]] Range(vector[long], float, int, vector[long])
@@ -189,6 +207,15 @@ cdef class cyaccess:
         impno - impedance id
         """
         return self.access.RoutesToFile(srcnodes, destnodes, impno, tripids, output_file.encode())
+
+    def routes_stats(self, np.ndarray[long] srcnodes,
+            np.ndarray[long] destnodes, int impno, np.ndarray[double] tonnes, str commodity, PyRoutingStatsState state):
+        """
+        srcnodes - node ids of origins
+        destnodes - node ids of destinations
+        impno - impedance id
+        """
+        return self.access.RoutesStats(srcnodes, destnodes, impno, tonnes, commodity.encode(), state.routingStatsState)
 
     def shortest_path_distance(self, int srcnode, int destnode, int impno=0):
         """
