@@ -270,7 +270,8 @@ def test_shortest_path(sample_osm):
 def test_shortest_paths(sample_osm):
 
     nodes = random_connected_nodes(sample_osm, 100)
-    vec_paths = sample_osm.shortest_paths(nodes[0:50], nodes[50:100])
+    vec_paths, internal_edges = sample_osm.shortest_paths(nodes[0:50], nodes[50:100])
+    assert not internal_edges
 
     for i in range(50):
         path = sample_osm.shortest_path(nodes[i], nodes[i + 50])

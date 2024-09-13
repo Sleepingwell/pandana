@@ -16,14 +16,17 @@ using std::vector;
 using std::string;
 using std::set;
 using std::map;
+using std::pair;
 
 class Accessibility {
  public:
     Accessibility(
         int numnodes,
         vector< vector<long> > edges,
-        vector< vector<double> >  edgeweights,
-        bool twoway);
+        vector< vector<double> > edgeweights,
+        bool twoway,
+        vector< int > edgeids,
+        vector< int > linkids);
 
     // initialize the category number with POIs at the node_id locations
     void initializeCategory(const double maxdist, const int maxitems, string category, vector<long> node_idx);
@@ -55,6 +58,18 @@ class Accessibility {
     // shortest path between list of origins and destinations
     vector<vector<int>> Routes(vector<long> sources, vector<long> targets,
                                int graphno = 0);
+
+    vector<int> RoutesToFile(const vector<long>& sources, const vector<long>& targets,
+                               int graphno, const vector<int>& trip_ids, char const* file_name);
+
+    std::vector<int> RoutesInternal(
+        vector<long> const& sources,
+        vector<long> const& targets,
+        int graphno,
+        vector<int> const& trip_ids,
+        char const* output_file,
+        vector<vector<int>>* routes_result
+    );
 
     // shortest path distance between two points
     double Distance(int src, int tgt, int graphno = 0);
@@ -124,6 +139,11 @@ class Accessibility {
         accessibility_vars_t &vars,
         float quantile,
         float radius);
+
+    map<pair<long, long>, pair<int, int>> nodeIdsToEdgeId;
+    bool has_edge_ids = false;
+    bool has_link_ids = false;
+    map<string, vector<pair<double, double>>> commodity_stats;
 };
 }  // namespace accessibility
 }  // namespace MTC

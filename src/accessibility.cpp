@@ -24,7 +24,9 @@ Accessibility::Accessibility(
         int numnodes,
         vector< vector<long>> edges,
         vector< vector<double>>  edgeweights,
-        bool twoway) {
+        bool twoway,
+        vector< int >  edgeids,
+        vector< int >  linkids) {
 
     this->aggregations.reserve(9);
     this->aggregations.push_back("sum");
@@ -41,6 +43,33 @@ Accessibility::Accessibility(
     this->decays.push_back("exp");
     this->decays.push_back("linear");
     this->decays.push_back("flat");
+
+    // assumes that edgeweights is the correct size (let pandana check that)
+    bool ee = edgeids.empty(), le = linkids.empty();
+    auto es = edgeids.size(), ls = linkids.size();
+    if(!(edgeids.empty() || edgeids.size() == edgeweights[0].size())) {
+        throw std::runtime_error("edge ids wrong size");
+    }
+    if(!(linkids.empty() || linkids.size() == edgeweights[0].size())) {
+        throw std::runtime_error("link ids wrong size");
+    }
+    if(edgeids.empty() && !linkids.empty()) {
+        has_link_ids = true;
+        for (int i = 0; i < linkids.size(); ++i) {
+            nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(-1, linkids[i]));
+        }
+    } else if(!edgeids.empty() && linkids.empty()) {
+        has_edge_ids = true;
+        for(int i = 0; i < edgeids.size(); ++i) {
+            nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], -1));
+        }
+    } else if(!edgeids.empty() && !linkids.empty()) {
+        has_link_ids = true;
+        has_edge_ids = true;
+        for(int i = 0; i < edgeids.size(); ++i) {
+            nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], linkids[i]));
+        }
+    }
 
     for (int i = 0 ; i < edgeweights.size() ; i++) {
         this->addGraphalg(new Graphalg(numnodes, edges, edgeweights[i],
@@ -136,6 +165,11 @@ Accessibility::Routes(vector<long> sources, vector<long> targets, int graphno) {
 
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<vector<int>> routes(n);
+
+    if(!this->nodeIdsToEdgeId.empty()) {
+        RoutesInternal(sources, targets, graphno, vector<int>{}, "", &routes);
+        return routes;
+    }
 
     #pragma omp parallel
     #pragma omp for schedule(guided)

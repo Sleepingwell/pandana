@@ -16,7 +16,7 @@ cimport numpy as np
 
 cdef extern from "accessibility.h" namespace "MTC::accessibility":
     cdef cppclass Accessibility:
-        Accessibility(int, vector[vector[long]], vector[vector[double]], bool) except +
+        Accessibility(int, vector[vector[long]], vector[vector[double]], bool, vector[int], vector[int]) except +
         vector[string] aggregations
         vector[string] decays
         void initializeCategory(double, int, string, vector[long])
@@ -27,6 +27,7 @@ cdef extern from "accessibility.h" namespace "MTC::accessibility":
             float, string, string, string, int)
         vector[int] Route(int, int, int)
         vector[vector[int]] Routes(vector[long], vector[long], int)
+        vector[int] RoutesToFile(vector[long], vector[long], int, vector[int], const char*)
         double Distance(int, int, int)
         vector[double] Distances(vector[long], vector[long], int)
         vector[vector[pair[long, float]]] Range(vector[long], float, int, vector[long])
@@ -67,7 +68,9 @@ cdef class cyaccess:
         np.ndarray[double, ndim=2] node_xys,
         np.ndarray[long, ndim=2] edges,
         np.ndarray[double, ndim=2] edge_weights,
-        bool twoway=True
+        bool twoway,
+        np.ndarray[int, ndim=1] edge_ids,
+        np.ndarray[int, ndim=1] link_ids,
     ):
         """
         node_ids: vector of node identifiers
@@ -80,7 +83,7 @@ cdef class cyaccess:
         # you're right, neither the node ids nor the location xys are used in here
         # anymore - I'm hesitant to out-and-out remove it as we might still use
         # it for something someday
-        self.access = new Accessibility(len(node_ids), edges, edge_weights, twoway)
+        self.access = new Accessibility(len(node_ids), edges, edge_weights, twoway, edge_ids, link_ids)
 
     def __dealloc__(self):
         del self.access
@@ -177,6 +180,15 @@ cdef class cyaccess:
         impno - impedance id
         """
         return self.access.Routes(srcnodes, destnodes, impno)
+
+    def shortest_paths_to_file(self, np.ndarray[long] srcnodes,
+            np.ndarray[long] destnodes, int impno, np.ndarray[int] tripids, str output_file):
+        """
+        srcnodes - node ids of origins
+        destnodes - node ids of destinations
+        impno - impedance id
+        """
+        return self.access.RoutesToFile(srcnodes, destnodes, impno, tripids, output_file.encode())
 
     def shortest_path_distance(self, int srcnode, int destnode, int impno=0):
         """

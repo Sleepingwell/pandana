@@ -37,7 +37,9 @@ def net(nodes_and_edges):
         nodes.values,
         edges.values.astype('int_'),
         edge_weights.transpose().values,
-        True
+        True,
+        np.array([], dtype="int32"),
+        np.array([], dtype="int32")
     )
 
     net.precompute_range(10)
