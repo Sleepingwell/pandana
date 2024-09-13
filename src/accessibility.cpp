@@ -24,7 +24,8 @@ Accessibility::Accessibility(
         int numnodes,
         vector< vector<long>> edges,
         vector< vector<double>>  edgeweights,
-        bool twoway) {
+        bool twoway,
+        vector< long >  edgeids) {
 
     this->aggregations.reserve(9);
     this->aggregations.push_back("sum");
@@ -41,6 +42,13 @@ Accessibility::Accessibility(
     this->decays.push_back("exp");
     this->decays.push_back("linear");
     this->decays.push_back("flat");
+
+    // assumes that edgeweights is the correct size (let pandana check that)
+    assert(edgeids.size() == edgeweights.size());
+
+    for(int i = 0; i < edgeids.size(); ++i) {
+        nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), edgeids[i]);
+    }
 
     for (int i = 0 ; i < edgeweights.size() ; i++) {
         this->addGraphalg(new Graphalg(numnodes, edges, edgeweights[i],
@@ -133,6 +141,9 @@ Accessibility::Route(int src, int tgt, int graphno) {
 
 vector<vector<int>>
 Accessibility::Routes(vector<long> sources, vector<long> targets, int graphno) {
+    if(!this->nodeIdsToEdgeId.empty()) {
+        return RoutesInternal(sources, targets, graphno);
+    }
 
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<vector<int>> routes(n);

@@ -65,7 +65,7 @@ class Network:
 
     """
 
-    def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True):
+    def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True, edge_ids=None):
         nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
         edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
 
@@ -76,6 +76,7 @@ class Network:
         self.variable_names = set()
         self.poi_category_names = []
         self.poi_category_indexes = {}
+        self.internal_edge_mapping = edge_ids is not None
 
         # this maps IDs to indexes which are used internally
         # this is a constant source of headaches, but all node identifiers
@@ -97,6 +98,7 @@ class Network:
             edges.values,
             edges_df[edge_weights.columns].transpose().astype("double").values,
             twoway,
+            edge_ids.astype("long").values if edge_ids is not None else np.array([], dtype="long"),
         )
 
         self._twoway = twoway
@@ -244,6 +246,9 @@ class Network:
         imp_num = self._imp_name_to_num(imp_name)
 
         paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
+
+        if self.internal_edge_mapping:
+            return paths
 
         # map back to external node ids
         return [self.node_ids.values[p] for p in paths]

@@ -16,7 +16,7 @@ cimport numpy as np
 
 cdef extern from "accessibility.h" namespace "MTC::accessibility":
     cdef cppclass Accessibility:
-        Accessibility(int, vector[vector[long]], vector[vector[double]], bool) except +
+        Accessibility(int, vector[vector[long]], vector[vector[double]], bool, vector[long]) except +
         vector[string] aggregations
         vector[string] decays
         void initializeCategory(double, int, string, vector[long])
@@ -67,6 +67,7 @@ cdef class cyaccess:
         np.ndarray[double, ndim=2] node_xys,
         np.ndarray[long, ndim=2] edges,
         np.ndarray[double, ndim=2] edge_weights,
+        np.ndarray[long, ndim=1] edge_ids,
         bool twoway=True
     ):
         """
@@ -80,7 +81,7 @@ cdef class cyaccess:
         # you're right, neither the node ids nor the location xys are used in here
         # anymore - I'm hesitant to out-and-out remove it as we might still use
         # it for something someday
-        self.access = new Accessibility(len(node_ids), edges, edge_weights, twoway)
+        self.access = new Accessibility(len(node_ids), edges, edge_weights, twoway, edge_ids)
 
     def __dealloc__(self):
         del self.access
