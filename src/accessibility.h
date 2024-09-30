@@ -25,7 +25,8 @@ class Accessibility {
         vector< vector<long> > edges,
         vector< vector<double> > edgeweights,
         bool twoway,
-        vector< long > edgeids);
+        vector< int > edgeids,
+        vector< int > linkids);
 
     // initialize the category number with POIs at the node_id locations
     void initializeCategory(const double maxdist, const int maxitems, string category, vector<long> node_idx);
@@ -58,7 +59,17 @@ class Accessibility {
     vector<vector<int>> Routes(vector<long> sources, vector<long> targets,
                                int graphno = 0);
 
-    vector<vector<int>> RoutesInternal(vector<long> const& sources, vector<long> const& targets, int graphno);
+    vector<int> RoutesToFile(const vector<long>& sources, const vector<long>& targets,
+                               int graphno, const vector<int>& trip_ids, char const* file_name);
+
+    std::vector<int> RoutesInternal(
+        vector<long> const& sources,
+        vector<long> const& targets,
+        int graphno,
+        vector<int> const& trip_ids,
+        char const* output_file,
+        vector<vector<int>>* routes_result
+    );
 
     // shortest path distance between two points
     double Distance(int src, int tgt, int graphno = 0);
@@ -129,7 +140,7 @@ class Accessibility {
         float quantile,
         float radius);
 
-    map<pair<long, long>, long> nodeIdsToEdgeId;
+    map<pair<long, long>, pair<int, int>> nodeIdsToEdgeId;
 };
 }  // namespace accessibility
 }  // namespace MTC

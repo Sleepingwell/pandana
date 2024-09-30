@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import os
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KDTree
@@ -65,7 +66,7 @@ class Network:
 
     """
 
-    def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True, edge_ids=None):
+    def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True, edge_ids=None, link_ids=None):
         nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
         edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
 
@@ -98,7 +99,8 @@ class Network:
             edges.values,
             edges_df[edge_weights.columns].transpose().astype("double").values,
             twoway,
-            edge_ids.astype("long").values if edge_ids is not None else np.array([], dtype="long"),
+            edge_ids.astype(np.int32).values if edge_ids is not None else np.array([]).astype(np.int32),
+            link_ids.astype(np.int32).values if link_ids is not None else np.array([]).astype(np.int32),
         )
 
         self._twoway = twoway
@@ -208,7 +210,7 @@ class Network:
         # map back to external node IDs
         return self.node_ids.values[path]
 
-    def shortest_paths(self, nodes_a, nodes_b, imp_name=None):
+    def shortest_paths(self, nodes_a, nodes_b, imp_name=None, trip_ids=None, output_file=None):
         """
         Vectorized calculation of shortest paths. Accepts a list of origins
         and list of destinations and returns a corresponding list of
@@ -234,10 +236,33 @@ class Network:
         """
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
-                "Origin and destination counts don't match: {}, {}".format(
+                "origin and destination node counts don't match: {}, {}".format(
                     len(nodes_a), len(nodes_b)
                 )
             )
+
+        if trip_ids is not None:
+            if output_file is None:
+                raise ValueError("output_file cannot be None if trip_ids is not None")
+
+            if len(nodes_a) != len(trip_ids):
+                raise ValueError(
+                    "origin/dest node and trip_id counts don't match: {}, {}".format(
+                        len(nodes_a), len(trip_ids)
+                    )
+                )
+
+        if output_file is not None:
+            output_file = str(output_file).strip()
+
+            if output_file == "":
+                pass
+
+            elif os.path.isdir(output_file):
+                raise ValueError("output_file must not be a directory")
+
+            elif not os.path.exists(os.path.dirname(output_file)):
+                raise ValueError("output_file must specify a directory that exists")
 
         # map to internal node indexes
         nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
@@ -245,13 +270,31 @@ class Network:
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
+        if trip_ids is not None:
+            if output_file is None:
+                raise ValueError("output_file must not be None if trips_ids is not None")
+
+            # here we are returning the ids of the routed trips
+            return self.net.shortest_paths_to_file(
+                nodes_a_idx,
+                nodes_b_idx,
+                imp_num,
+                trip_ids.astype(np.int32).values,
+                output_file)
+
+        elif output_file is not None:
+            raise ValueError("output_file must be None if trips_ids is None")
+
+        paths = self.net.shortest_paths(
+            nodes_a_idx,
+            nodes_b_idx,
+            imp_num)
 
         if self.internal_edge_mapping:
-            return paths
+            return paths, True
 
         # map back to external node ids
-        return [self.node_ids.values[p] for p in paths]
+        return [self.node_ids.values[p] for p in paths], False
 
     def shortest_path_length(self, node_a, node_b, imp_name=None):
         """

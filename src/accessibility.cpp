@@ -25,7 +25,8 @@ Accessibility::Accessibility(
         vector< vector<long>> edges,
         vector< vector<double>>  edgeweights,
         bool twoway,
-        vector< long >  edgeids) {
+        vector< int >  edgeids,
+        vector< int >  linkids) {
 
     this->aggregations.reserve(9);
     this->aggregations.push_back("sum");
@@ -45,9 +46,10 @@ Accessibility::Accessibility(
 
     // assumes that edgeweights is the correct size (let pandana check that)
     assert(edgeids.size() == edgeweights.size());
+    assert(edgeids.size() == linkids.size());
 
     for(int i = 0; i < edgeids.size(); ++i) {
-        nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), edgeids[i]);
+        nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], linkids[i]));
     }
 
     for (int i = 0 ; i < edgeweights.size() ; i++) {
@@ -138,15 +140,17 @@ Accessibility::Route(int src, int tgt, int graphno) {
     return vector<int> (ret.begin(), ret.end());
 }
 
-
 vector<vector<int>>
 Accessibility::Routes(vector<long> sources, vector<long> targets, int graphno) {
+    vector<vector<int>> routes{};
+
     if(!this->nodeIdsToEdgeId.empty()) {
-        return RoutesInternal(sources, targets, graphno);
+        RoutesInternal(sources, targets, graphno, vector<int>{}, "", &routes);
+        return routes;
     }
 
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
-    vector<vector<int>> routes(n);
+    routes.resize(n);
 
     #pragma omp parallel
     #pragma omp for schedule(guided)
