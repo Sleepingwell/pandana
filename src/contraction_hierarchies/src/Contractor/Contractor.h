@@ -34,6 +34,7 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include <set>
 #include <stack>
 #include <limits>
+#include <random>
 #ifdef _OPENMP
 #include <omp.h>
 #else
@@ -233,7 +234,7 @@ public:
 #pragma omp parallel for schedule ( guided )
         for ( int x = 0; x < ( int ) numberOfNodes; ++x )
             remainingNodes[x].first = x;
-        std::random_shuffle( remainingNodes.begin(), remainingNodes.end() );
+        std::shuffle( remainingNodes.begin(), remainingNodes.end(), std::mt19937_64(std::random_device()()) );
         for ( int x = 0; x < ( int ) numberOfNodes; ++x )
             nodeData[remainingNodes[x].first].bias = x;
 
