@@ -10,7 +10,7 @@ from setuptools import find_packages, setup, Extension
 # Building the C++ extension
 ###############################################
 
-extra_compile_args = ["-w", "-std=c++11", "-O3"]
+extra_compile_args = ["-w", "-std=c++17", "-O3"]
 extra_link_args = []
 
 # Mac compilation: flags are for the llvm compilers included with recent
