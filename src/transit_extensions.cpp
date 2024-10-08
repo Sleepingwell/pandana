@@ -103,12 +103,11 @@ namespace MTC::accessibility {
             }
 
             for (int i = 0; i < current_batch_size; ++i, ++bi) {
-                auto trip_id = *bi;
                 auto const &vec = routes[i];
                 if (!vec.empty()) {
                     vector<int>* routes_result_vec = nullptr;
                     if(routes_result == nullptr) {
-                        results.push_back(trip_id);
+                        results.push_back(*bi);
                     } else {
                         routes_result->emplace_back(vec.size());
                         routes_result_vec = &routes_result->back();
@@ -120,7 +119,7 @@ namespace MTC::accessibility {
                             results_file << *bi << ',' << br->first << ',' << br->second << '\n';
                         }
                         if(routes_result_vec != nullptr) {
-                            routes_result_vec->push_back(br->first);
+                            routes_result_vec->push_back(return_edge_ids ? br->first : br->second);
                         }
                     }
                 }

@@ -45,11 +45,27 @@ Accessibility::Accessibility(
     this->decays.push_back("flat");
 
     // assumes that edgeweights is the correct size (let pandana check that)
-    assert(edgeids.size() == edgeweights.size());
-    assert(edgeids.size() == linkids.size());
-
-    for(int i = 0; i < edgeids.size(); ++i) {
-        nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], linkids[i]));
+    bool ee = edgeids.empty(), le = linkids.empty();
+    auto es = edgeids.size(), ls = linkids.size();
+    if(!(edgeids.empty() || edgeids.size() == edgeweights[0].size())) {
+        throw std::runtime_error("edge ids wrong size");
+    }
+    if(!(linkids.empty() || linkids.size() == edgeweights[0].size())) {
+        throw std::runtime_error("link ids wrong size");
+    }
+    if(edgeids.empty() && !linkids.empty()) {
+        return_edge_ids = false;
+        for (int i = 0; i < linkids.size(); ++i) {
+            nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(-1, linkids[i]));
+        }
+    } else if(!edgeids.empty() && linkids.empty()) {
+        for(int i = 0; i < edgeids.size(); ++i) {
+            nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], -1));
+        }
+    } else if(!edgeids.empty() && !linkids.empty()) {
+        for(int i = 0; i < edgeids.size(); ++i) {
+            nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], linkids[i]));
+        }
     }
 
     for (int i = 0 ; i < edgeweights.size() ; i++) {

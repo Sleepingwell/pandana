@@ -69,6 +69,10 @@ class Network:
     def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True, edge_ids=None, link_ids=None):
         nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
         edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
+        if edge_ids is not None:
+            edge_ids = pd.DataFrame({"edge_ids": edge_ids}).join(edge_weights)["edge_ids"]
+        if link_ids is not None:
+            link_ids = pd.DataFrame({"link_ids": link_ids}).join(edge_weights)["link_ids"]
 
         self.nodes_df = nodes_df
         self.edges_df = edges_df
@@ -77,7 +81,7 @@ class Network:
         self.variable_names = set()
         self.poi_category_names = []
         self.poi_category_indexes = {}
-        self.internal_edge_mapping = edge_ids is not None
+        self.internal_edge_mapping = edge_ids is not None or link_ids is not None
 
         # this maps IDs to indexes which are used internally
         # this is a constant source of headaches, but all node identifiers
@@ -241,22 +245,11 @@ class Network:
                 )
             )
 
-        if trip_ids is not None:
-            if output_file is None:
-                raise ValueError("output_file cannot be None if trip_ids is not None")
-
-            if len(nodes_a) != len(trip_ids):
-                raise ValueError(
-                    "origin/dest node and trip_id counts don't match: {}, {}".format(
-                        len(nodes_a), len(trip_ids)
-                    )
-                )
-
         if output_file is not None:
             output_file = str(output_file).strip()
 
             if output_file == "":
-                pass
+                output_file = None
 
             elif os.path.isdir(output_file):
                 raise ValueError("output_file must not be a directory")
@@ -264,15 +257,22 @@ class Network:
             elif not os.path.exists(os.path.dirname(output_file)):
                 raise ValueError("output_file must specify a directory that exists")
 
+        if trip_ids is not None and len(nodes_a) != len(trip_ids):
+            raise ValueError(
+                "number of origin/dest node and number of trip ids don't match: {}, {}".format(
+                    len(nodes_a), len(trip_ids)
+                )
+            )
+
         # map to internal node indexes
         nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
         nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        if trip_ids is not None:
-            if output_file is None:
-                raise ValueError("output_file must not be None if trips_ids is not None")
+        if output_file is not None:
+            if trip_ids is None:
+                raise ValueError("trip_ids must not be None if output_file is not None")
 
             # here we are returning the ids of the routed trips
             return self.net.shortest_paths_to_file(
@@ -282,19 +282,18 @@ class Network:
                 trip_ids.astype(np.int32).values,
                 output_file)
 
-        elif output_file is not None:
-            raise ValueError("output_file must be None if trips_ids is None")
-
         paths = self.net.shortest_paths(
             nodes_a_idx,
             nodes_b_idx,
             imp_num)
 
-        if self.internal_edge_mapping:
-            return paths, True
+        if not self.internal_edge_mapping:
+            paths = [self.node_ids.values[p] for p in paths]
 
-        # map back to external node ids
-        return [self.node_ids.values[p] for p in paths], False
+        if trip_ids is not None:
+            return zip(trip_ids, paths), self.internal_edge_mapping
+
+        return paths, self.internal_edge_mapping
 
     def shortest_path_length(self, node_a, node_b, imp_name=None):
         """

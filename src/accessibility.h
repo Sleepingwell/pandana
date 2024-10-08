@@ -141,6 +141,7 @@ class Accessibility {
         float radius);
 
     map<pair<long, long>, pair<int, int>> nodeIdsToEdgeId;
+    bool return_edge_ids = true;
 };
 }  // namespace accessibility
 }  // namespace MTC
