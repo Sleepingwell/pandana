@@ -8,6 +8,7 @@
 #include <map>
 #include "shared.h"
 #include "graphalg.h"
+#include "route_state.h"
 
 namespace MTC {
 namespace accessibility {
@@ -61,6 +62,9 @@ class Accessibility {
 
     vector<int> RoutesToFile(const vector<long>& sources, const vector<long>& targets,
                                int graphno, const vector<int>& trip_ids, char const* file_name);
+
+    void RoutesStats(const vector<long>& sources, const vector<long>& targets,
+                               int graphno, vector<double> const& tonnes, char const* commodity, RoutingStatsState* routing_stats_state) const;
 
     std::vector<int> RoutesInternal(
         vector<long> const& sources,
@@ -141,7 +145,9 @@ class Accessibility {
         float radius);
 
     map<pair<long, long>, pair<int, int>> nodeIdsToEdgeId;
-    bool return_edge_ids = true;
+    bool has_edge_ids = false;
+    bool has_link_ids = false;
+    map<string, vector<pair<double, double>>> commodity_stats;
 };
 }  // namespace accessibility
 }  // namespace MTC

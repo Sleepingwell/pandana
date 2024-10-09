@@ -54,15 +54,18 @@ Accessibility::Accessibility(
         throw std::runtime_error("link ids wrong size");
     }
     if(edgeids.empty() && !linkids.empty()) {
-        return_edge_ids = false;
+        has_link_ids = true;
         for (int i = 0; i < linkids.size(); ++i) {
             nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(-1, linkids[i]));
         }
     } else if(!edgeids.empty() && linkids.empty()) {
+        has_edge_ids = true;
         for(int i = 0; i < edgeids.size(); ++i) {
             nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], -1));
         }
     } else if(!edgeids.empty() && !linkids.empty()) {
+        has_link_ids = true;
+        has_edge_ids = true;
         for(int i = 0; i < edgeids.size(); ++i) {
             nodeIdsToEdgeId.emplace(std::make_pair(edges[i][0], edges[i][1]), std::make_pair(edgeids[i], linkids[i]));
         }
