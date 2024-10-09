@@ -1,0 +1,41 @@
+#include "route_state.h"
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+
+namespace fs = std::filesystem;
+
+namespace MTC::accessibility {
+    RoutingStatsState::RoutingStatsState(int max_link_id) : max_link_id_(max_link_id) {}
+
+    RoutingStatsState::StatsVector& RoutingStatsState::operator[](std::string const& commodity) {
+        auto& res = stats_[commodity];
+        if(res.size() != max_link_id() + 1) {
+            res.resize(max_link_id() + 1);
+        }
+        return res;
+    }
+
+    void RoutingStatsState::serialise(const char * output_directory, int n_runs) {
+        auto output_dir = fs::path(output_directory);
+        if(!fs::is_directory(output_dir)) {
+            throw std::runtime_error("output_dir must be a directory");
+        }
+        for(auto const& [commodity, edge_stats]: stats_) {
+            auto output_file = std::ofstream(fs::path(output_dir) / (commodity + ".csv"));
+            output_file << "trip_id,mean,sd\n";
+            auto id = 0;
+            output_file << std::setprecision(2);
+            for(auto const& moments: edge_stats) {
+                auto mean = static_cast<long double>(moments.first) / n_runs;
+                auto var = static_cast<long double>(moments.second) / n_runs - mean * mean;
+                if(var < -1e-2) {
+                    throw std::runtime_error("negative variance: " + std::to_string(var));
+                }
+                output_file << id << ',' << mean << ',' << (var > 0.L ? std::sqrt(var) : 0.L) << '\n';
+                ++id;
+            }
+        }
+    }
+};

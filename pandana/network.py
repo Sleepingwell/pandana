@@ -69,6 +69,7 @@ class Network:
     def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True, edge_ids=None, link_ids=None):
         nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
         edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
+
         if edge_ids is not None:
             edge_ids = pd.DataFrame({"edge_ids": edge_ids}).join(edge_weights)["edge_ids"]
         if link_ids is not None:
@@ -294,6 +295,64 @@ class Network:
             return zip(trip_ids, paths), self.internal_edge_mapping
 
         return paths, self.internal_edge_mapping
+
+    def routes_stats(self, nodes_a, nodes_b, imp_name, tonnes, commodity, routing_stats_state):
+        """
+        Vectorized calculation of shortest paths. Accepts a list of origins
+        and list of destinations and returns a corresponding list of
+        shortest path routes. Must provide an impedance name if more than
+        one is available.
+
+        Added in Pandana v0.6.
+
+        Parameters
+        ----------
+        nodes_a : list-like of ints
+            Source node IDs
+        nodes_b : list-like of ints
+            Corresponding destination node IDs
+        imp_name : string
+            The impedance name to use for the shortest path
+
+        Returns
+        -------
+        paths : list of np.ndarray
+            Nodes traversed in each shortest path
+
+        """
+
+        if not self.internal_edge_mapping:
+            raise Exception("shortest_path_stats only works with internal edge mapping")
+
+        commodity = str(commodity).strip()
+
+        if len(nodes_a) != len(nodes_b):
+            raise ValueError(
+                "number of origin and destination nodes don't match: {}, {}".format(
+                    len(nodes_a), len(nodes_b)
+                )
+            )
+
+        if len(nodes_a) != len(tonnes):
+            raise ValueError(
+                "number of origin/dest nodes and number of trip ids don't match: {}, {}".format(
+                    len(nodes_a), len(tonnes)
+                )
+            )
+
+        # map to internal node indexes
+        nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
+        nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values
+
+        imp_num = self._imp_name_to_num(imp_name)
+
+        return self.net.routes_stats(
+            nodes_a_idx,
+            nodes_b_idx,
+            imp_num,
+            tonnes.astype(np.float64).values,
+            commodity,
+            routing_stats_state)
 
     def shortest_path_length(self, node_a, node_b, imp_name=None):
         """
