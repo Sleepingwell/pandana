@@ -67,7 +67,7 @@ if sys.platform.startswith("darwin"):  # Mac
 # Window compilation: flags are for Visual C++
 
 elif sys.platform.startswith("win"):  # Windows
-    extra_compile_args = ["/w", "/openmp"]
+    extra_compile_args = ["/w", "/openmp", "/std:c++17"]
 
 # Linux compilation: flags are for gcc 4.8 and later
 
