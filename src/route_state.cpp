@@ -28,6 +28,9 @@ namespace MTC::accessibility {
             auto id = 0;
             output_file << std::setprecision(2);
             for(auto const& moments: edge_stats) {
+                if(moments.first <= 0.0) {
+                    continue;
+                }
                 auto mean = static_cast<long double>(moments.first) / n_runs;
                 auto var = static_cast<long double>(moments.second) / n_runs - mean * mean;
                 if(var < -1e-2 && (std::sqrt(-var) / mean) > 1e-6) {

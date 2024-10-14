@@ -209,13 +209,13 @@ cdef class cyaccess:
         return self.access.RoutesToFile(srcnodes, destnodes, impno, tripids, output_file.encode())
 
     def routes_stats(self, np.ndarray[long] srcnodes,
-            np.ndarray[long] destnodes, int impno, np.ndarray[double] tonnes, str output_file, PyRoutingStatsState state):
+            np.ndarray[long] destnodes, int impno, np.ndarray[double] tonnes, str commodity, PyRoutingStatsState state):
         """
         srcnodes - node ids of origins
         destnodes - node ids of destinations
         impno - impedance id
         """
-        return self.access.RoutesStats(srcnodes, destnodes, impno, tonnes, output_file.encode(), state.routingStatsState)
+        return self.access.RoutesStats(srcnodes, destnodes, impno, tonnes, commodity.encode(), state.routingStatsState)
 
     def shortest_path_distance(self, int srcnode, int destnode, int impno=0):
         """
