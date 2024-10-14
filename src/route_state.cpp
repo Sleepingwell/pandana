@@ -30,8 +30,13 @@ namespace MTC::accessibility {
             for(auto const& moments: edge_stats) {
                 auto mean = static_cast<long double>(moments.first) / n_runs;
                 auto var = static_cast<long double>(moments.second) / n_runs - mean * mean;
-                if(var < -1e-2) {
-                    throw std::runtime_error("negative variance: " + std::to_string(var));
+                if(var < -1e-2 && (std::sqrt(-var) / mean) > 1e-6) {
+                    throw std::runtime_error(
+                        std::string("negative variance: (") + commodity + ") " + std::to_string(var) +
+                        "\n\tmean: " + std::to_string(mean) +
+                        "\n\tsum(x): " + std::to_string(moments.first) +
+                        "\n\tsum(x^2): " + std::to_string(moments.second) +
+                        "\n");
                 }
                 output_file << id << ',' << mean << ',' << (var > 0.L ? std::sqrt(var) : 0.L) << '\n';
                 ++id;
