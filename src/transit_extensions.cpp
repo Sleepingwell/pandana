@@ -109,12 +109,11 @@ namespace MTC::accessibility {
                     if(routes_result == nullptr) {
                         results.push_back(*bi);
                     } else {
-                        routes_result->emplace_back(vec.size());
+                        routes_result->emplace_back();
                         routes_result_vec = &routes_result->back();
+                        routes_result_vec->reserve(vec.size());
                     }
-                    auto br = vec.cbegin();
-                    auto er = vec.cend();
-                    for (; br != er; ++br) {
+                    for (auto br = vec.cbegin(), er = vec.cend(); br != er; ++br) {
                         if(use_dir) {
                             results_file << *bi << ',' << br->first << ',' << br->second << '\n';
                         }
