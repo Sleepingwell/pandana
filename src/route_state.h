@@ -13,7 +13,7 @@ public:
     using StatsVector = std::vector<std::pair<double, double>>;
     explicit RoutingStatsState(int);
     StatsVector& operator[](std::string const&);
-    void serialise(const char*, int, int);
+    void serialise(const char*, int);
     int max_link_id() const { return max_link_id_; }
 
 private:

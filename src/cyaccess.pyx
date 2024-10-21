@@ -16,7 +16,7 @@ cimport numpy as np
 cdef extern from "route_state.h" namespace "MTC::accessibility":
     cdef cppclass RoutingStatsState:
         RoutingStatsState(int) except +
-        void serialise(const char*, int, int) except +
+        void serialise(const char*, int) except +
 
 cdef class PyRoutingStatsState:
     cdef RoutingStatsState * routingStatsState
@@ -27,8 +27,8 @@ cdef class PyRoutingStatsState:
     def __dealloc__(self):
         del self.routingStatsState
 
-    def serialise(self, filename, n_files, job_id):
-        self.routingStatsState.serialise(str(filename).encode(), n_files, job_id)
+    def serialise(self, filename, job_id):
+        self.routingStatsState.serialise(str(filename).encode(), job_id)
 
 
 cdef extern from "accessibility.h" namespace "MTC::accessibility":
