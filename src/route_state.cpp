@@ -17,13 +17,13 @@ namespace MTC::accessibility {
         return res;
     }
 
-    void RoutingStatsState::serialise(const char * output_directory, int n_runs) {
+    void RoutingStatsState::serialise(const char * output_directory, int n_runs, int job_id) {
         auto output_dir = fs::path(output_directory);
         if(!fs::is_directory(output_dir)) {
             throw std::runtime_error("output_dir must be a directory");
         }
         for(auto const& [commodity, edge_stats]: stats_) {
-            auto output_file = std::ofstream(fs::path(output_dir) / (commodity + ".csv"));
+            auto output_file = std::ofstream(fs::path(output_dir) / (commodity + "_" + std::to_string(job_id) + ".csv"));
             output_file << "trip_id,mean,sd\n";
             auto id = 0;
             output_file << std::setprecision(2);
