@@ -10,7 +10,7 @@ namespace MTC::accessibility {
 
 class RoutingStatsState {
 public:
-    using StatsVector = std::vector<std::pair<double, double>>;
+    using StatsVector = std::vector<double>;
     explicit RoutingStatsState(int);
     StatsVector& operator[](std::string const&);
     void serialise(const char*, int);
