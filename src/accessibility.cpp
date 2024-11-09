@@ -166,12 +166,14 @@ Accessibility::Routes(vector<long> sources, vector<long> targets, int graphno) {
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<vector<int>> routes;
 
+#ifndef FORCE_ORIGINAL_ROUTES_FUNCTION
     if(!this->nodeIdsToEdgeId.empty()) {
         RoutesInternal<1>(sources, targets, graphno, vector<int>{}, "", &routes);
         return routes;
     } else {
         routes.resize(n);
     }
+#endif // FORCE_ORIGINAL_ROUTES_FUNCTION
 
     #pragma omp parallel
     #pragma omp for schedule(guided)
