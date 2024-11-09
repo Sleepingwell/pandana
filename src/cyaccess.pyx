@@ -14,9 +14,28 @@ cimport numpy as np
 # http://www.birving.com/blog/2014/05/13/passing-numpy-arrays-between-python-and/
 
 cdef extern from "route_state.h" namespace "MTC::accessibility":
+    void do_transpose(const char*, int, int) except +
+    vector[float] do_extract_rows(const char*, vector[int], int) except +
+
     cdef cppclass RoutingStatsState:
         RoutingStatsState(int) except +
         void serialise(const char*, int) except +
+
+def transpose(str filename, int n_simulations, int n_links):
+    do_transpose(filename.encode(), n_simulations, n_links)
+
+def extract_simulations_for_links(
+        str filename,
+        np.ndarray[int] link_ids,
+        int n_simulations):
+    cdef vector[float] vec = do_extract_rows(filename.encode(), link_ids, n_simulations)
+    cdef np.ndarray[float, ndim=2] arr = np.empty((link_ids.shape[0], n_simulations),
+dtype=np.float32)
+    for i in range(arr.shape[0]):
+        for j in range(n_simulations):
+            arr[i][j] = vec[i * n_simulations + j]
+    return arr
+
 
 cdef class PyRoutingStatsState:
     cdef RoutingStatsState * routingStatsState
