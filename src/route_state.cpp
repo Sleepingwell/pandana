@@ -23,14 +23,13 @@ namespace MTC::accessibility {
         }
         for(auto const& [commodity, edge_stats]: stats_) {
             auto output_file = std::ofstream(fs::path(output_dir) / (commodity + "_" + std::to_string(job_id) + ".csv"));
-            output_file << "link_id,x,x2\n";
-            auto id = 0;
             output_file << std::setprecision(2);
-            for(auto const& moments: edge_stats) {
-                if(moments.first > 0.0) {
-                    output_file << id << ',' << moments.first << ',' << moments.second << '\n';
-                }
-                ++id;
+            auto b=edge_stats.cbegin(), e=edge_stats.cend();
+            if(b != e) {
+                output_file << *b++;
+            }
+            for(;b!=e; ++b) {
+                output_file << ',' << *b;
             }
         }
     }

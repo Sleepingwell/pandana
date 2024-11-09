@@ -218,9 +218,7 @@ namespace MTC::accessibility {
 
         auto ba = (*routing_stats_state)[commodity].begin();
         for(auto val: total_tonnes_for_trips) {
-            ba->first += val;
-            ba->second += val * val;
-            ++ba;
+            *ba++ = val;
         }
     }
 } // end namespace MTC::accessibility
