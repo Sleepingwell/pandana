@@ -16,6 +16,7 @@ cimport numpy as np
 cdef extern from "route_state.h" namespace "MTC::accessibility":
     void do_transpose(const char*, int, int) except +
     vector[float] do_extract_rows(const char*, vector[int], int) except +
+    void do_create_output_file(const char*, const char*, int, int) except +
 
     cdef cppclass RoutingStatsState:
         RoutingStatsState(int) except +
@@ -29,13 +30,14 @@ def extract_simulations_for_links(
         np.ndarray[int] link_ids,
         int n_simulations):
     cdef vector[float] vec = do_extract_rows(filename.encode(), link_ids, n_simulations)
-    cdef np.ndarray[float, ndim=2] arr = np.empty((link_ids.shape[0], n_simulations),
-dtype=np.float32)
+    cdef np.ndarray[float, ndim=2] arr = np.empty((link_ids.shape[0], n_simulations), dtype=np.float32)
     for i in range(arr.shape[0]):
         for j in range(n_simulations):
             arr[i][j] = vec[i * n_simulations + j]
     return arr
 
+def create_output_file(str output_dir, str commodity, int n_links, int n_simulations):
+    do_create_output_file(output_dir.encode(), commodity.encode(), n_links, n_simulations)
 
 cdef class PyRoutingStatsState:
     cdef RoutingStatsState * routingStatsState
@@ -46,8 +48,8 @@ cdef class PyRoutingStatsState:
     def __dealloc__(self):
         del self.routingStatsState
 
-    def serialise(self, filename, job_id):
-        self.routingStatsState.serialise(str(filename).encode(), job_id)
+    def serialise(self, output_dir, simulation_number):
+        self.routingStatsState.serialise(str(output_dir).encode(), simulation_number)
 
 
 cdef extern from "accessibility.h" namespace "MTC::accessibility":

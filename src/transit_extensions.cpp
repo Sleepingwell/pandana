@@ -5,6 +5,8 @@
 #include <filesystem> // path
 #include <fstream>    // ifstream, ofstream
 
+#define INCLUDE_LINKS_ONCE false
+
 namespace fs = std::filesystem;
 
 namespace MTC::accessibility {
@@ -86,13 +88,13 @@ namespace MTC::accessibility {
             for (int i = 0; i < current_batch_size; ++i) {
                 // remember we can't just ++n_done here, because we are in a parallel block
                 auto trip = n_done + i;
-                vector<NodeID> ret = this->ga[graphno]->Route(sources[trip], targets[trip], omp_get_thread_num());
-                if (ret.size() > 1) {
-                    auto& routed_vec = routes[i];
-                    routed_vec.resize(ret.size() - 1);
+                vector<NodeID> route = this->ga[graphno]->Route(sources[trip], targets[trip], omp_get_thread_num());
+                if (route.size() > 1) {
+                    auto& routed_segment_ids = routes[i];
+                    routed_segment_ids.resize(route.size() - 1);
                     std::transform(
-                        ret.cbegin(), ret.cend() - 1, ret.cbegin() + 1,
-                        routed_vec.begin(),
+                        route.cbegin(), route.cend() - 1, route.cbegin() + 1,
+                        routed_segment_ids.begin(),
                         [&](NodeID src, NodeID dst) { return this->nodeIdsToEdgeId.at({src, dst}); });
                 } else {
                     routes[i].resize(0);
@@ -154,28 +156,30 @@ namespace MTC::accessibility {
             throw std::runtime_error("requested stats for links but links weren't provided");
         }
 
-        auto total_tonnes_for_trips_vectors = std::vector<vector<double>>(num_threads, std::vector<double>(n_links));
+        auto total_tonnes_for_trips_vectors = std::vector<vector<double>>(num_threads, std::vector<double>(n_links, 0.0));
 
 #pragma omp parallel
         {
+#if INCLUDE_LINKS_ONCE
             auto included_ids_thread = std::vector<bool>(n_links);
+#endif // INCLUDE_LINKS_ONCE
             auto& total_tonnes_for_trips_thread = total_tonnes_for_trips_vectors[omp_get_thread_num()];
 
 #pragma omp for schedule(guided)
-            for (int trip = 0; trip < n_trips; ++trip) {
-                auto trip_size_tonnes = tonnes[trip];
+            for (int trip = 0u; trip < n_trips; ++trip) {
 
-                // We can't ++source.begin() and ++targets.begin() here, because we are in a parallel block
+                // We can't ++sources.begin() and ++targets.begin() here, because we are in a parallel block
                 vector<NodeID> link_ids = this->ga[graphno]->Route(sources[trip], targets[trip], omp_get_thread_num());
 
                 if (link_ids.size() > 1) {
-                    // If a trip traverses the same link more than once, we still only count it once.
-                    // TODO: Is this what we want to do?
-                    // This can happen, for example, when decoupling. If, however we allowed multiple
-                    // crossing to count (i.e., if a link is traversed n time we count it n times),
-                    // then we could avoid all the conditionals in the following loop and the need for
-                    // the transform. This might make a performance difference.
+                    // If a trip traverses the same link more than once, we might only want to count it once. This can
+                    // happen, for example, when decoupling. If, however we allowed multiple crossing to count (i.e., if
+                    // a link is traversed n times we count it n times), then we could avoid all the conditionals in the
+                    // following loop and the need for the transform. This might make a performance difference.
+#if INCLUDE_LINKS_ONCE
                     std::fill(included_ids_thread.begin(), included_ids_thread.end(), false);
+#endif // INCLUDE_LINKS_ONCE
+                    auto trip_size_tonnes = tonnes[trip];
                     for (
                         auto
                             src = link_ids.cbegin(),
@@ -185,32 +189,44 @@ namespace MTC::accessibility {
                         ++src, ++dst
                     ) {
                         auto link_id = this->nodeIdsToEdgeId.at({*src, *dst}).second;
-                        // TODO: If we trusted our data, we could avoid the conditionals here.
                         if (link_id >= n_links) {
+                            // TODO: We probably don't this check.
                             throw std::runtime_error("link_id " + std::to_string(link_id) + " out of bounds");
                         } else if (link_id >= 0) {
+#if INCLUDE_LINKS_ONCE
                             included_ids_thread[link_id] = true;
+#else // then not INCLUDE_LINKS_ONCE
+                            total_tonnes_for_trips_thread[link_id] += trip_size_tonnes;
+#endif // INCLUDE_LINKS_ONCE
                         }
                     }
 
+#if INCLUDE_LINKS_ONCE
                     std::transform(
                         included_ids_thread.cbegin(),
                         included_ids_thread.cend(),
                         total_tonnes_for_trips_thread.cbegin(),
                         total_tonnes_for_trips_thread.begin(),
                         [=](bool included, double total) { return included ? (total + trip_size_tonnes) : total; });
+#endif // INCLUDE_LINKS_ONCE
                 }
-            }
-        }
+            } // end omp for schedule
+        } // end omp parallel
 
-        auto& output = (*routing_stats_state)[commodity];
+        // We don't write directly to output because it contains vectors of
+        // floats and we don't want rounding problems while aggregating.
+        auto total_for_all_threads = std::vector<double>(n_links, 0.0);
         for(auto const& thread_totals: total_tonnes_for_trips_vectors) {
             std::transform(
                 thread_totals.cbegin(),
                 thread_totals.cend(),
-                output.cbegin(),
-                output.begin(),
+                total_for_all_threads.cbegin(),
+                total_for_all_threads.begin(),
                 [](double thread_total, double total) { return total + thread_total; });
         }
+        std::copy(
+            total_for_all_threads.cbegin(),
+            total_for_all_threads.cend(),
+            (*routing_stats_state)[commodity].begin());
     }
 } // end namespace MTC::accessibility
