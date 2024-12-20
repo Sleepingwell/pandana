@@ -33,8 +33,10 @@ auto build_graph(int n_nodes, Generator& gen) {
         for(Node n1=n0+1; n1<n_nodes; ++n1) {
             edges.emplace_back(std::vector<Node>{n0, n1});
             edge_map[{n0, n1}] = edge_id++;
+
             edges.emplace_back(std::vector<Node>{n1, n0});
             edge_map[{n1, n0}] = edge_id++;
+
             weights[0].push_back(dis(gen));
             weights[0].push_back(dis(gen));
         }

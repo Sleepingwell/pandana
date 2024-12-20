@@ -45,8 +45,6 @@ Accessibility::Accessibility(
     this->decays.push_back("flat");
 
     // assumes that edgeweights is the correct size (let pandana check that)
-    bool ee = edgeids.empty(), le = linkids.empty();
-    auto es = edgeids.size(), ls = linkids.size();
     if(!(edgeids.empty() || edgeids.size() == edgeweights[0].size())) {
         throw std::runtime_error("edge ids wrong size");
     }
