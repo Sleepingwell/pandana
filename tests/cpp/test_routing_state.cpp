@@ -7,7 +7,8 @@
 namespace fs = std::filesystem;
 
 int main() {
-    static auto test_data_dir_name = fs::path{"/tmp/routing_state_test_data_ao08upliurlllhjleh"};
+    // We use a static name so we can easily identify the outputs when debugging.
+    static auto test_data_dir_name = fs::path{"/tmp/routing_state_test_data_from_test_routing_state"};
     create_directory(test_data_dir_name);
     std::atexit([]() {
         if(exists(test_data_dir_name)) {
@@ -23,6 +24,7 @@ int main() {
     routing_state["oranges"][0] = 1;
     routing_state["oranges"][1] = 2;
     routing_state["oranges"][2] = 3;
+
     routing_state.serialise(test_data_dir_name, 0);
     routing_state.serialise(test_data_dir_name, 2);
 

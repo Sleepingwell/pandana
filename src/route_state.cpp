@@ -30,7 +30,7 @@ namespace MTC::accessibility {
             const auto output_file_name = output_dir / (commodity + ".dat");
 
             // Open the file with read/write permissions and create it if it doesn't exist.
-            int fd = open(output_file_name.c_str(), O_CREAT | O_WRONLY, 0666);
+            const auto fd = open(output_file_name.c_str(), O_CREAT | O_WRONLY, 0666);
 
             if (fd == -1) {
                 throw std::runtime_error("Error opening file \"" + output_file_name.generic_string() + "\"");
@@ -39,6 +39,7 @@ namespace MTC::accessibility {
             const auto data_size = n_links() * sz;
             const char *data = reinterpret_cast<const char*>(edge_stats.data());
             const auto bytes_written = pwrite(fd, data, data_size, job_id * data_size);
+
             close(fd);
 
             if (bytes_written == -1) {
@@ -54,24 +55,22 @@ namespace MTC::accessibility {
         using float_t = RoutingStatsState::StatsVector::value_type;
         static constexpr long sz = sizeof(float_t);
 
-        const size_t ns = n_simulations;
-        const size_t nl = n_links;
-        auto idata = std::vector<float_t>(nl);
-        auto odata = std::vector<float_t>(ns * nl);
+        auto idata = std::vector<float_t>(n_links);
+        auto odata = std::vector<float_t>(n_simulations * n_links);
         auto input_data = std::ifstream(filename, std::ios::binary);
 
         if(!input_data) {
             throw std::runtime_error("failed to open input file \"" + std::string(filename) + "\"");
         }
 
-        for(size_t s=0; s<ns; ++s) {
-            input_data.read(reinterpret_cast<char*>(idata.data()), nl * sz);
+        for(int simulation=0; simulation<n_simulations; ++simulation) {
+            input_data.read(reinterpret_cast<char*>(idata.data()), n_links * sz);
             if(!input_data) {
                 throw std::runtime_error("failed reading from input file \"" + std::string(filename) + "\"");
             }
             auto bi = idata.cbegin();
-            for(size_t l=0; l<nl; ++l, ++bi) {
-                odata[l*ns + s] = *bi;
+            for(int link=0; link<n_links; ++link, ++bi) {
+                odata[link*n_simulations + simulation] = *bi;
             }
         }
 
@@ -80,7 +79,7 @@ namespace MTC::accessibility {
             throw std::runtime_error("failed opening output file \"" + std::string(filename) + "\"");
         }
 
-        output_data.write(reinterpret_cast<const char *>(odata.data()), ns * nl * sz);
+        output_data.write(reinterpret_cast<const char *>(odata.data()), n_simulations * n_links * sz);
         if(!output_data) {
             throw std::runtime_error("failed writing to output file \"" + std::string(filename) + "\"");
         }
@@ -89,10 +88,10 @@ namespace MTC::accessibility {
 
     std::vector<float> do_extract_rows(const char* filename, std::vector<int> const& link_ids, int n_simulations) {
         using float_t = RoutingStatsState::StatsVector::value_type;
-        using dv = std::vector<float_t>;
+        using float_vector = std::vector<float_t>;
         static constexpr long sz = sizeof(float_t);
 
-        auto result = dv(n_simulations * link_ids.size());
+        auto result = float_vector(n_simulations * link_ids.size());
         auto input_data = std::ifstream(filename, std::ios::binary);
 
         if(!input_data) {

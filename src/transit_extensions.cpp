@@ -163,9 +163,8 @@ namespace MTC::accessibility {
 
 #pragma omp for schedule(guided)
             for (int trip = 0; trip < n_trips; ++trip) {
-                auto trip_size_tonnes = tonnes[trip];
 
-                // We can't ++source.begin() and ++targets.begin() here, because we are in a parallel block
+                // We can't ++sources.begin() and ++targets.begin() here, because we are in a parallel block
                 vector<NodeID> link_ids = this->ga[graphno]->Route(sources[trip], targets[trip], omp_get_thread_num());
 
                 if (link_ids.size() > 1) {
@@ -193,6 +192,7 @@ namespace MTC::accessibility {
                         }
                     }
 
+                    auto trip_size_tonnes = tonnes[trip];
                     std::transform(
                         included_ids_thread.cbegin(),
                         included_ids_thread.cend(),
@@ -200,8 +200,8 @@ namespace MTC::accessibility {
                         total_tonnes_for_trips_thread.begin(),
                         [=](bool included, double total) { return included ? (total + trip_size_tonnes) : total; });
                 }
-            }
-        }
+            } // end omp for schedule
+        } // end omp parallel
 
         auto& output = (*routing_stats_state)[commodity];
         for(auto const& thread_totals: total_tonnes_for_trips_vectors) {
