@@ -15,9 +15,10 @@ namespace MTC::accessibility {
         const vector<int>& trip_ids,
         char const* file_name
     ) {
-        return RoutesInternal(sources, targets, graphno, trip_ids, file_name, nullptr);
+        return RoutesInternal<0>(sources, targets, graphno, trip_ids, file_name, nullptr);
     }
 
+    template<int Index>
     std::vector<int> Accessibility::RoutesInternal(
         vector<long> const& sources,
         vector<long> const& targets,
@@ -26,8 +27,9 @@ namespace MTC::accessibility {
         char const* output_file,
         vector<vector<int>>* routes_result
     ) {
-         // Returned results are only populated if routes_result == nullptr.
+        assert(routes_result->empty());
 
+        // Returned results are only populated if routes_result == nullptr.
         static constexpr size_t max_batch_size = 10000;
         const auto n_trips = sources.size();
 
@@ -116,8 +118,7 @@ namespace MTC::accessibility {
                         if(routes_result_vec != nullptr) {
                             // TODO: Determine if we ever want to return trips ids, for now
                             //       always return the edge ids
-                            //routes_result_vec->push_back(return_edge_ids ? p.first : p.second);
-                            routes_result_vec->push_back(p.first);
+                            routes_result_vec->push_back(std::get<Index>(p));
                         }
                     }
                 }
@@ -129,4 +130,23 @@ namespace MTC::accessibility {
 
         return results;
     }
+
+    template std::vector<int> Accessibility::RoutesInternal<0>(
+            vector<long> const& sources,
+            vector<long> const& targets,
+            int graphno,
+            vector<int> const& trip_ids,
+            char const* output_file,
+            vector<vector<int>>* routes_result
+    );
+
+
+    template std::vector<int> Accessibility::RoutesInternal<1>(
+            vector<long> const& sources,
+            vector<long> const& targets,
+            int graphno,
+            vector<int> const& trip_ids,
+            char const* output_file,
+            vector<vector<int>>* routes_result
+    );
 } // end namespace MTC::accessibility

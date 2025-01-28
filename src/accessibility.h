@@ -62,6 +62,7 @@ class Accessibility {
     vector<int> RoutesToFile(const vector<long>& sources, const vector<long>& targets,
                                int graphno, const vector<int>& trip_ids, char const* file_name);
 
+    template<int>
     std::vector<int> RoutesInternal(
         vector<long> const& sources,
         vector<long> const& targets,
