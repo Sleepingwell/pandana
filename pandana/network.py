@@ -99,9 +99,9 @@ class Network:
         )
 
         self.net = cyaccess(
-            self.node_idx.values,
+            self.node_idx.astype(np.int64).values,
             nodes_df.astype("double").values,
-            edges.values,
+            edges.astype(np.int64).values,
             edges_df[edge_weights.columns].transpose().astype("double").values,
             twoway,
             edge_ids.astype(np.int32).values if edge_ids is not None else np.array([]).astype(np.int32),
@@ -277,8 +277,8 @@ class Network:
 
             # here we are returning the ids of the routed trips
             return self.net.shortest_paths_to_file(
-                nodes_a_idx,
-                nodes_b_idx,
+                nodes_a_idx.astype(np.int64),
+                nodes_b_idx.astype(np.int64),
                 imp_num,
                 trip_ids.astype(np.int32).values,
                 output_file)

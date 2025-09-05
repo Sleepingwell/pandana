@@ -8,6 +8,7 @@ from libcpp.pair cimport pair
 
 import numpy as np
 cimport numpy as np
+cimport numpy as cnp
 
 # resources
 # http://cython.readthedocs.io/en/latest/src/userguide/wrapping_CPlusPlus.html
@@ -64,13 +65,13 @@ cdef class cyaccess:
 
     def __cinit__(
         self,
-        np.ndarray[long] node_ids,
+        np.ndarray[cnp.int64_t] node_ids,
         np.ndarray[double, ndim=2] node_xys,
-        np.ndarray[long, ndim=2] edges,
+        np.ndarray[cnp.int64_t, ndim=2] edges,
         np.ndarray[double, ndim=2] edge_weights,
         bool twoway,
-        np.ndarray[int, ndim=1] edge_ids,
-        np.ndarray[int, ndim=1] link_ids,
+        np.ndarray[cnp.int32_t, ndim=1] edge_ids,
+        np.ndarray[cnp.int32_t, ndim=1] link_ids,
     ):
         """
         node_ids: vector of node identifiers
@@ -181,8 +182,8 @@ cdef class cyaccess:
         """
         return self.access.Routes(srcnodes, destnodes, impno)
 
-    def shortest_paths_to_file(self, np.ndarray[long] srcnodes,
-            np.ndarray[long] destnodes, int impno, np.ndarray[int] tripids, str output_file):
+    def shortest_paths_to_file(self, np.ndarray[cnp.int64_t] srcnodes,
+            np.ndarray[cnp.int64_t] destnodes, int impno, np.ndarray[cnp.int32_t] tripids, str output_file):
         """
         srcnodes - node ids of origins
         destnodes - node ids of destinations
