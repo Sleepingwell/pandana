@@ -266,8 +266,8 @@ class Network:
             )
 
         # map to internal node indexes
-        nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
-        nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values
+        nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values.astype(np.long)
+        nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values.astype(np.long)
 
         imp_num = self._imp_name_to_num(imp_name)
 
