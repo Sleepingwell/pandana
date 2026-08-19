@@ -1,4 +1,5 @@
 #include "graphalg.h"
+#include "contraction_hierarchies/src/Util/BlockTimer.h"
 #include <math.h>
 
 namespace MTC {
@@ -31,17 +32,26 @@ Graphalg::Graphalg(
 
     vector<CH::Edge> ev;
 
-    for (int i = 0 ; i < edges.size() ; i++) {
-        CH::Edge e(edges[i][0], edges[i][1], i,
-            edgeweights[i]*DISTANCEMULTFACT, true, twoway);
-        ev.push_back(e);
+    {
+        CH::BlockTimer timer("  Graphalg: converting edges");
+        for (int i = 0 ; i < edges.size() ; i++) {
+            CH::Edge e(edges[i][0], edges[i][1], i,
+                edgeweights[i]*DISTANCEMULTFACT, true, twoway);
+            ev.push_back(e);
+        }
     }
 
     FILE_LOG(logINFO) << "Setting CH edge vector of size "
                       << ev.size() << "\n";
 
-    ch.SetEdgeVector(ev);
-    ch.RunPreprocessing();
+    {
+        CH::BlockTimer timer(" Graphalg: SetEdgeVector");
+        ch.SetEdgeVector(ev);
+    }
+    {
+        CH::BlockTimer timer(" Graphalg: RunPreprocessing");
+        ch.RunPreprocessing();
+    }
 }
 
 

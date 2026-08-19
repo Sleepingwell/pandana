@@ -22,6 +22,7 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include "POIIndex/POIIndex.h"
 #if defined(_OPENMP) && (defined(__amd64__) || defined(__i386__))
 #include "Util/HyperThreading.h"
+#include "Util/BlockTimer.h"
 #endif
 namespace CH {
 
@@ -82,12 +83,23 @@ inline ostream& operator<< (ostream& os, const Edge& e) {
 		CHASSERT(!this->edgeList.size(), "EdgeList already set");
 
 		//fill edge vector and check if each target and source node exists
-		for(unsigned i = 0; i < ev.size(); i++) {
-			this->edgeList.push_back(ev[i]);
+		{
+			BlockTimer timer("  SetEdgeVector: copying edges");
+			for(unsigned i = 0; i < ev.size(); i++) {
+				this->edgeList.push_back(ev[i]);
+			}
 		}
 		CHASSERT(ev.size() == this->edgeList.size(), "edge lists sizes differ");
-		this->contractor = new Contractor( this->nodeVector.size(), this->edgeList );
-        this->rangeGraph = BuildRangeGraph(this->nodeVector.size(), this->edgeList);
+		{
+			BlockTimer timer("  SetEdgeVector: building contractor");
+			this->contractor = new Contractor( this->nodeVector.size(), this->edgeList );
+		}
+		{
+			// Only range and POI queries read this graph. TraNSIT issues neither, so on a TraNSIT
+			// run this is time and memory spent on a structure nothing goes on to look at.
+			BlockTimer timer("  SetEdgeVector: building range graph");
+			this->rangeGraph = BuildRangeGraph(this->nodeVector.size(), this->edgeList);
+		}
 	}
 
 	std::string ContractionHierarchies::GetVersionString () {
@@ -96,23 +108,34 @@ inline ostream& operator<< (ostream& os, const Edge& e) {
 
 	void ContractionHierarchies::RunPreprocessing() {
 		//build CH
-		this->contractor->Run();
+		{
+			// The node ordering is computed here, interleaved with the contraction it drives, so
+			// this covers both. It is the part a reusable ordering would let a later build skip.
+			BlockTimer timer("  RunPreprocessing: contracting");
+			this->contractor->Run();
+		}
 
 		//clean CH
-		std::vector< ContractionCleanup::Edge > contractedEdges;
-		this->contractor->GetEdges( contractedEdges );
-		ContractionCleanup * cleanup = new ContractionCleanup(this->nodeVector.size(), contractedEdges);
-		contractedEdges.clear();
-		cleanup->Run();
-
 		std::vector< InputEdge> cleanedEdgeList;
-		cleanup->GetData(cleanedEdgeList);
-		delete cleanup;
+		{
+			BlockTimer timer("  RunPreprocessing: cleaning up");
+			std::vector< ContractionCleanup::Edge > contractedEdges;
+			this->contractor->GetEdges( contractedEdges );
+			ContractionCleanup * cleanup = new ContractionCleanup(this->nodeVector.size(), contractedEdges);
+			contractedEdges.clear();
+			cleanup->Run();
+
+			cleanup->GetData(cleanedEdgeList);
+			delete cleanup;
+		}
 
 		//build query object
-		this->staticGraph = new QueryGraph(this->nodeVector.size(), cleanedEdgeList);
-		for(unsigned i = 0; i < numberOfThreads; ++i) {
-		    queryObjects.push_back(new SimpleCHQuery<EdgeData, QueryGraph, Heap>(this->staticGraph, this->rangeGraph));
+		{
+			BlockTimer timer("  RunPreprocessing: building query graph");
+			this->staticGraph = new QueryGraph(this->nodeVector.size(), cleanedEdgeList);
+			for(unsigned i = 0; i < numberOfThreads; ++i) {
+			    queryObjects.push_back(new SimpleCHQuery<EdgeData, QueryGraph, Heap>(this->staticGraph, this->rangeGraph));
+			}
 		}
 		//std::cout << "finished constructing query objects" << std::endl;
 		//deconstruct contractor?
